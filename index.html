@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayZRP Skill Build Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Bebas+Neue&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #0a0806;
+  --dark: #111009;
+  --paper: #d6c9b0;
+  --paper-mid: #c2b49a;
+  --paper-dark: #a89070;
+  --ink: #1a1208;
+  --ink-faded: #3d2b14;
+  --red: #9b1c1c;
+  --red-bright: #c0392b;
+  --red-dark: #6b1212;
+  --white-node: #e8dfd0;
+  --red-node: #9b1c1c;
+  --black-node: #1e1710;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: #0a0806;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: 'Courier Prime', monospace;
+  overflow: hidden;
+}
+
+/* Grain overlay */
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+
+.screen { display:none; width:1000px; height:680px; position:relative; }
+.screen.active { display:flex; }
+
+/* ============ PAPER DOCUMENT ============ */
+.doc {
+  width:100%; height:100%;
+  background: var(--paper);
+  position:relative; overflow:hidden;
+  border: 1px solid #7a6040;
+  box-shadow: 0 0 0 5px #1a1208, 0 0 60px rgba(0,0,0,0.95), inset 0 0 100px rgba(60,30,5,0.25);
+}
+/* Paper texture lines */
+.doc::before {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(80,50,15,0.07) 27px, rgba(80,50,15,0.07) 28px),
+    radial-gradient(ellipse at 15% 85%, rgba(80,40,5,0.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 10%, rgba(60,30,5,0.12) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(200,180,140,0.05) 0%, transparent 70%);
+}
+/* Corner wear top-right */
+.doc::after {
+  content:''; position:absolute; top:0; right:0; width:80px; height:80px; pointer-events:none; z-index:1;
+  background: radial-gradient(circle at top right, rgba(60,30,5,0.2) 0%, transparent 70%);
+}
+
+.doc-inner { position:relative; z-index:2; width:100%; height:100%; display:flex; flex-direction:column; }
+
+/* ============ WEATHERING LAYER ============ */
+.weathering {
+  position:absolute; inset:0; pointer-events:none; z-index:3; overflow:hidden;
+}
+/* Torn bottom edge */
+.doc-torn-bottom {
+  position:absolute; bottom:0; left:0; right:0; height:18px; pointer-events:none; z-index:4;
+  background: var(--paper);
+  clip-path: polygon(
+    0% 100%, 0% 40%, 1% 20%, 2% 55%, 3% 30%, 4% 60%, 5% 25%, 6% 50%, 7% 15%,
+    8% 45%, 9% 70%, 10% 35%, 11% 60%, 12% 20%, 13% 50%, 14% 30%, 15% 65%,
+    16% 40%, 17% 10%, 18% 45%, 19% 25%, 20% 55%, 21% 35%, 22% 65%, 23% 20%,
+    24% 50%, 25% 30%, 26% 60%, 27% 15%, 28% 45%, 29% 70%, 30% 35%, 31% 55%,
+    32% 25%, 33% 50%, 34% 20%, 35% 60%, 36% 40%, 37% 65%, 38% 30%, 39% 55%,
+    40% 15%, 41% 45%, 42% 25%, 43% 60%, 44% 35%, 45% 55%, 46% 20%, 47% 50%,
+    48% 30%, 49% 65%, 50% 10%, 51% 45%, 52% 25%, 53% 55%, 54% 35%, 55% 60%,
+    56% 20%, 57% 50%, 58% 30%, 59% 65%, 60% 40%, 61% 15%, 62% 50%, 63% 25%,
+    64% 60%, 65% 35%, 66% 55%, 67% 20%, 68% 45%, 69% 70%, 70% 30%, 71% 55%,
+    72% 25%, 73% 50%, 74% 15%, 75% 45%, 76% 65%, 77% 35%, 78% 55%, 79% 20%,
+    80% 50%, 81% 30%, 82% 60%, 83% 40%, 84% 65%, 85% 25%, 86% 50%, 87% 15%,
+    88% 45%, 89% 30%, 90% 60%, 91% 35%, 92% 55%, 93% 20%, 94% 50%, 95% 30%,
+    96% 60%, 97% 40%, 98% 55%, 99% 25%, 100% 50%, 100% 100%
+  );
+}
+/* Folded corner top-left */
+.doc-fold {
+  position:absolute; top:0; left:0; width:40px; height:40px; pointer-events:none; z-index:5;
+  background: linear-gradient(135deg, #b5a07a 50%, transparent 50%);
+  box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+.doc-fold::after {
+  content:''; position:absolute; top:0; left:0; width:40px; height:40px;
+  background: linear-gradient(135deg, #c8b890 0%, #a89070 50%, transparent 50%);
+}
+
+/* ============ SHARED HEADER ============ */
+.doc-header {
+  padding: 12px 24px 10px;
+  border-bottom: 2px solid var(--ink-faded);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.header-left .eyebrow { font-family:'Bebas Neue',sans-serif; font-size:10px; letter-spacing:5px; color:var(--ink-faded); opacity:0.65; }
+.header-left .title { font-family:'Special Elite',cursive; font-size:24px; color:var(--ink); line-height:1.1; }
+.stamp-classified {
+  font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:4px;
+  color:var(--red); border:2.5px solid var(--red);
+  padding:3px 9px; opacity:0.8; transform:rotate(-7deg); display:inline-block;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+}
+
+/* ============ HUB ============ */
+#hub .doc-inner { }
+
+.hub-xp-bar {
+  display:flex; align-items:center; gap:10px;
+  padding:5px 24px; border-bottom:1px solid rgba(58,35,15,0.25); flex-shrink:0;
+}
+.xp-label { font-size:9px; letter-spacing:3px; color:var(--ink-faded); text-transform:uppercase; white-space:nowrap; opacity:0.75; }
+.xp-track {
+  flex:1; height:8px; background:rgba(58,35,15,0.15); border:1px solid rgba(58,35,15,0.35); position:relative; overflow:hidden;
+}
+.xp-track::before {
+  content:''; position:absolute; inset:0;
+  background:repeating-linear-gradient(90deg,transparent,transparent 16px,rgba(58,35,15,0.2) 16px,rgba(58,35,15,0.2) 17px);
+}
+.xp-fill { height:100%; background:var(--red); transition:width 0.5s ease; position:relative; }
+.xp-fill::after { content:''; position:absolute; right:0; top:0; bottom:0; width:2px; background:rgba(255,200,200,0.5); }
+.xp-value { font-size:10px; color:var(--ink-faded); white-space:nowrap; font-family:'Courier Prime',monospace; }
+
+.hub-canvas { flex:1; position:relative; overflow:hidden; }
+.hub-svg { width:100%; height:100%; }
+
+.tree-btn {
+  position:absolute; cursor:pointer; padding:6px 10px;
+  border:none; background:none; z-index:10;
+  transition:all 0.15s;
+}
+.tree-btn .btn-name { font-family:'Special Elite',cursive; font-size:16px; color:var(--ink); display:block; }
+.tree-btn .btn-sub  { font-family:'Bebas Neue',sans-serif; font-size:9px; letter-spacing:3px; color:var(--red); display:block; opacity:0.85; margin-top:1px; }
+.tree-btn:hover .btn-name { color:var(--red); }
+.tree-btn.tl { top:10px; left:14px; text-align:left; }
+.tree-btn.tr { top:10px; right:14px; text-align:right; }
+.tree-btn.bl { bottom:10px; left:14px; text-align:left; }
+.tree-btn.br { bottom:10px; right:14px; text-align:right; }
+
+.hub-footer {
+  padding:6px 24px; border-top:1px solid rgba(58,35,15,0.25); flex-shrink:0;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.footer-note { font-size:8px; letter-spacing:2px; color:var(--ink-faded); opacity:0.55; text-transform:uppercase; }
+.footer-xp { font-family:'Courier Prime',monospace; font-size:10px; color:var(--ink-faded); letter-spacing:1px; }
+
+/* ============ TREE SCREEN ============ */
+.tree-header {
+  padding:10px 20px; border-bottom:2px solid var(--ink-faded);
+  display:flex; align-items:center; gap:14px; flex-shrink:0;
+}
+.back-btn {
+  font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:3px;
+  color:var(--paper); background:var(--ink-faded); border:none;
+  padding:5px 12px; cursor:pointer; transition:background 0.15s; white-space:nowrap;
+}
+.back-btn:hover { background:var(--red); }
+.tree-title-text { font-family:'Special Elite',cursive; font-size:20px; color:var(--ink); }
+
+.tier-xp-area { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.tier-xp-label { font-size:9px; letter-spacing:2px; color:var(--ink-faded); text-transform:uppercase; opacity:0.75; }
+.tier-xp-track { width:120px; height:7px; background:rgba(58,35,15,0.15); border:1px solid rgba(58,35,15,0.35); overflow:hidden; }
+.tier-xp-fill { height:100%; background:var(--red); transition:width 0.5s ease; }
+.tier-xp-val { font-size:9px; color:var(--ink-faded); font-family:'Courier Prime',monospace; white-space:nowrap; }
+
+.tree-body { flex:1; display:flex; overflow:hidden; min-height:0; }
+
+/* Tier sidebar */
+.tier-sidebar {
+  width:70px; display:flex; flex-direction:column;
+  border-right:1px dashed rgba(58,35,15,0.3); flex-shrink:0;
+  padding:10px 0;
+}
+.tier-block {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  position:relative; cursor:pointer;
+  border-bottom:1px dashed rgba(58,35,15,0.2);
+}
+.tier-block:last-child { border-bottom:none; }
+.tier-num {
+  font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px;
+  transition:color 0.2s;
+}
+.tier-num.unlocked { color:var(--ink); }
+.tier-num.next     { color:var(--red); }
+.tier-num.locked   { color:rgba(58,35,15,0.3); }
+.tier-label { font-size:7px; letter-spacing:2px; text-transform:uppercase; opacity:0.6; margin-top:2px; }
+.tier-cost {
+  font-size:7px; letter-spacing:1px; color:var(--red); font-family:'Bebas Neue',sans-serif;
+  margin-top:3px; opacity:0.9;
+}
+.tier-unlock-btn {
+  margin-top:5px; font-family:'Bebas Neue',sans-serif; font-size:8px; letter-spacing:2px;
+  background:var(--red); color:var(--paper); border:none; padding:2px 6px; cursor:pointer;
+  transition:background 0.15s; display:none;
+}
+.tier-unlock-btn:hover { background:var(--red-bright); }
+
+/* Node canvas */
+.node-canvas { flex:1; position:relative; overflow:hidden; }
+.node-svg { width:100%; height:100%; }
+
+/* Info panel */
+.info-panel {
+  width:260px; border-left:2px solid var(--ink-faded);
+  display:flex; flex-direction:column; overflow:hidden; flex-shrink:0;
+  position:relative;
+}
+.info-panel::before { content:''; position:absolute; inset:0; background:rgba(50,25,5,0.06); pointer-events:none; }
+
+.info-empty {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height:100%; opacity:0.3; text-align:center; padding:20px;
+}
+.info-empty-stamp {
+  font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:4px;
+  color:var(--red); border:3.5px solid var(--red);
+  padding:5px 12px; transform:rotate(-12deg); margin-bottom:10px;
+}
+.info-empty-note { font-size:9px; letter-spacing:2px; color:var(--ink-faded); text-transform:uppercase; }
+
+.info-content { display:none; flex-direction:column; height:100%; padding:16px 14px; position:relative; z-index:1; }
+.info-content.vis { display:flex; animation:fadeUp 0.18s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+.info-badge { font-family:'Bebas Neue',sans-serif; font-size:9px; letter-spacing:3px; color:var(--red); margin-bottom:3px; }
+.info-name { font-family:'Special Elite',cursive; font-size:18px; color:var(--ink); margin-bottom:5px; line-height:1.2; }
+.info-divider { height:1px; background:var(--ink-faded); opacity:0.3; margin:6px 0; }
+.info-desc { font-size:10px; color:var(--ink-faded); line-height:1.7; font-style:italic; margin-bottom:10px; }
+.info-perks-title { font-family:'Bebas Neue',sans-serif; font-size:11px; letter-spacing:4px; color:var(--ink); opacity:0.75; margin-bottom:6px; }
+.info-perks { flex:1; overflow-y:auto; }
+.info-perks::-webkit-scrollbar { width:2px; }
+.info-perks::-webkit-scrollbar-thumb { background:rgba(58,35,15,0.3); }
+.info-perk { display:flex; gap:6px; margin-bottom:6px; font-size:9.5px; color:var(--ink-faded); line-height:1.55; }
+.perk-bullet { width:5px; height:5px; background:var(--red); flex-shrink:0; margin-top:4px; }
+.info-level-tag { font-family:'Bebas Neue',sans-serif; font-size:8px; letter-spacing:1px; color:var(--red); white-space:nowrap; margin-top:1px; flex-shrink:0; }
+
+.info-footer {
+  padding-top:10px; border-top:1px dashed rgba(58,35,15,0.35); flex-shrink:0; margin-top:6px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.cost-area .cost-label { font-size:8px; letter-spacing:2px; color:var(--ink-faded); opacity:0.65; text-transform:uppercase; }
+.cost-area .cost-val { font-family:'Bebas Neue',sans-serif; font-size:16px; color:var(--ink); letter-spacing:1px; }
+.act-btn {
+  font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:2px;
+  background:var(--red); color:var(--paper); border:none; padding:5px 12px;
+  cursor:pointer; transition:all 0.15s;
+}
+.act-btn:hover { background:var(--red-bright); }
+.act-btn:disabled { background:rgba(58,35,15,0.25); color:rgba(58,35,15,0.4); cursor:not-allowed; }
+.act-btn.purchased { background:none; border:1px solid rgba(58,35,15,0.4); color:rgba(58,35,15,0.5); font-size:9px; cursor:default; }
+
+.tree-footer {
+  padding:5px 18px; border-top:1px solid rgba(58,35,15,0.25);
+  display:flex; justify-content:space-between; align-items:center; flex-shrink:0;
+}
+.skill-xp-display { font-family:'Courier Prime',monospace; font-size:10px; color:var(--ink-faded); }
+
+/* ============ PLANNER UI ============ */
+.planner-bar {
+  display:flex; align-items:center; gap:14px;
+  padding:6px 24px; border-bottom:1px solid rgba(58,35,15,0.25); flex-shrink:0;
+  background:rgba(58,35,15,0.04);
+}
+.planner-counter {
+  display:flex; align-items:baseline; gap:4px;
+}
+.planner-counter .num {
+  font-family:'Bebas Neue',sans-serif; font-size:26px; line-height:1;
+  transition:color 0.2s;
+}
+.planner-counter .num.ok   { color:var(--ink); }
+.planner-counter .num.warn { color:#c47a00; }
+.planner-counter .num.over { color:var(--red); }
+.planner-counter .denom { font-family:'Bebas Neue',sans-serif; font-size:14px; color:var(--ink-faded); opacity:0.6; }
+.planner-counter .lbl { font-size:8px; letter-spacing:3px; color:var(--ink-faded); text-transform:uppercase; opacity:0.7; margin-left:2px; }
+.planner-divider { width:1px; height:30px; background:rgba(58,35,15,0.2); flex-shrink:0; }
+.planner-xp {
+  display:flex; flex-direction:column; gap:1px;
+}
+.planner-xp .lbl { font-size:8px; letter-spacing:2px; color:var(--ink-faded); text-transform:uppercase; opacity:0.65; }
+.planner-xp .val { font-family:'Bebas Neue',sans-serif; font-size:14px; color:var(--ink); letter-spacing:1px; }
+.planner-tree-counts {
+  display:flex; gap:10px; margin-left:4px;
+}
+.tree-count-pill {
+  display:flex; flex-direction:column; align-items:center;
+  background:rgba(58,35,15,0.08); border:1px solid rgba(58,35,15,0.2);
+  padding:2px 8px; min-width:50px;
+}
+.tree-count-pill .tc-name { font-size:7px; letter-spacing:2px; color:var(--ink-faded); text-transform:uppercase; opacity:0.7; }
+.tree-count-pill .tc-val  { font-family:'Bebas Neue',sans-serif; font-size:14px; color:var(--ink); line-height:1.1; }
+.planner-actions { margin-left:auto; display:flex; gap:8px; }
+.plan-btn {
+  font-family:'Bebas Neue',sans-serif; font-size:11px; letter-spacing:2px;
+  border:none; padding:5px 12px; cursor:pointer; transition:all 0.15s; white-space:nowrap;
+}
+.plan-btn.reset { background:rgba(58,35,15,0.15); color:var(--ink-faded); }
+.plan-btn.reset:hover { background:rgba(58,35,15,0.3); }
+.plan-btn.share { background:var(--red); color:var(--paper); }
+.plan-btn.share:hover { background:var(--red-bright); }
+
+/* Node planned state — green tint outline */
+.node-planned { }
+
+/* Warning toast */
+.warn-toast {
+  position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--red); color:var(--paper);
+  font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:3px;
+  padding:8px 22px; opacity:0; pointer-events:none;
+  transition:all 0.3s ease; z-index:99999; white-space:nowrap;
+}
+.warn-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Share modal */
+.share-modal {
+  position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:99998;
+  display:none; align-items:center; justify-content:center;
+}
+.share-modal.open { display:flex; }
+.share-box {
+  background:var(--paper); border:2px solid var(--ink-faded);
+  padding:28px 32px; width:480px; position:relative;
+  box-shadow: 0 0 0 4px #1a1208, 0 0 40px rgba(0,0,0,0.8);
+}
+.share-box h2 { font-family:'Special Elite',cursive; font-size:20px; color:var(--ink); margin-bottom:6px; }
+.share-box p  { font-size:10px; letter-spacing:1px; color:var(--ink-faded); margin-bottom:14px; line-height:1.6; }
+.share-code {
+  width:100%; font-family:'Courier Prime',monospace; font-size:11px;
+  background:rgba(58,35,15,0.08); border:1px solid rgba(58,35,15,0.3);
+  color:var(--ink); padding:10px 12px; resize:none; height:60px;
+  letter-spacing:0.5px;
+}
+.share-btns { display:flex; gap:10px; margin-top:12px; }
+.share-copy {
+  font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:2px;
+  background:var(--red); color:var(--paper); border:none; padding:6px 16px; cursor:pointer;
+}
+.share-copy:hover { background:var(--red-bright); }
+.share-load {
+  font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:2px;
+  background:rgba(58,35,15,0.15); color:var(--ink-faded); border:none; padding:6px 16px; cursor:pointer;
+}
+.share-load:hover { background:rgba(58,35,15,0.3); }
+.share-close {
+  position:absolute; top:10px; right:14px;
+  font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:2px;
+  background:none; border:none; color:var(--ink-faded); cursor:pointer; opacity:0.6;
+}
+.share-close:hover { opacity:1; }
+
+/* Planned node highlight in tree */
+circle.is-planned { stroke: #4a7a3a !important; stroke-width:2.5 !important; }
+
+/* PLANNER MODE info panel additions */
+.plan-node-status {
+  font-family:'Bebas Neue',sans-serif; font-size:10px; letter-spacing:2px;
+  padding:3px 8px; display:inline-block; margin-bottom:8px;
+}
+.plan-node-status.planned { background:rgba(74,122,58,0.15); color:#3a6a2a; border:1px solid rgba(74,122,58,0.3); }
+.plan-node-status.available { background:rgba(58,35,15,0.08); color:var(--ink-faded); border:1px solid rgba(58,35,15,0.2); }
+.plan-node-status.locked { background:rgba(155,28,28,0.08); color:var(--red); border:1px solid rgba(155,28,28,0.2); }
+</style>
+</head>
+<body>
+
+<!-- ===== HUB ===== -->
+<div class="screen active" id="hub">
+  <div class="doc">
+    <!-- Weathering layer -->
+    <svg class="weathering" viewBox="0 0 1000 680" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <defs>
+        <filter id="blur2"><feGaussianBlur stdDeviation="2"/></filter>
+        <filter id="blur4"><feGaussianBlur stdDeviation="4"/></filter>
+        <filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter>
+        <filter id="roughen"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G"/></filter>
+      </defs>
+
+      <!-- Water damage / tide mark — left side -->
+      <ellipse cx="120" cy="340" rx="90" ry="180" fill="none" stroke="rgba(100,70,20,0.12)" stroke-width="8" filter="url(#blur4)"/>
+      <ellipse cx="120" cy="340" rx="75" ry="155" fill="rgba(100,70,20,0.04)" filter="url(#blur6)"/>
+
+      <!-- Water damage — top right -->
+      <ellipse cx="880" cy="80" rx="120" ry="60" fill="none" stroke="rgba(90,60,15,0.1)" stroke-width="6" filter="url(#blur4)"/>
+      <ellipse cx="880" cy="80" rx="100" ry="45" fill="rgba(90,60,15,0.03)" filter="url(#blur6)"/>
+
+      <!-- Coffee ring stain — left of center, mid page -->
+      <circle cx="290" cy="420" r="55" fill="none" stroke="rgba(80,45,10,0.22)" stroke-width="4" filter="url(#blur2)"/>
+      <circle cx="290" cy="420" r="50" fill="none" stroke="rgba(80,45,10,0.10)" stroke-width="10" filter="url(#blur4)"/>
+      <circle cx="290" cy="420" r="42" fill="rgba(80,45,10,0.03)" filter="url(#blur6)"/>
+      <!-- Coffee ring gap (incomplete ring effect) -->
+      <path d="M 290 365 A 55 55 0 0 1 340 410" fill="none" stroke="rgba(214,201,176,0.9)" stroke-width="6"/>
+
+      <!-- Second smaller coffee ring overlapping -->
+      <circle cx="330" cy="445" r="34" fill="none" stroke="rgba(80,45,10,0.15)" stroke-width="3" filter="url(#blur2)"/>
+      <circle cx="330" cy="445" r="29" fill="rgba(80,45,10,0.02)" filter="url(#blur4)"/>
+
+      <!-- Blood smear — bottom right of canvas area -->
+      <path d="M 720 490 Q 760 480 790 500 Q 810 510 800 525 Q 785 535 760 528 Q 740 520 720 490Z" fill="rgba(100,10,10,0.18)" filter="url(#blur2)"/>
+      <path d="M 790 500 Q 820 495 840 508 Q 835 518 815 515Z" fill="rgba(100,10,10,0.12)" filter="url(#blur2)"/>
+      <!-- Blood drip -->
+      <path d="M 770 528 Q 768 548 772 558 Q 775 562 774 555 Q 771 545 773 530Z" fill="rgba(100,10,10,0.14)" filter="url(#blur2)"/>
+
+      <!-- Pencil scribble marks — top area, faint -->
+      <path d="M 580 55 L 620 48 L 615 58 L 650 50 L 645 60" fill="none" stroke="rgba(40,30,15,0.18)" stroke-width="1.2" stroke-linecap="round" filter="url(#blur2)"/>
+      <path d="M 590 65 L 640 60 L 635 70" fill="none" stroke="rgba(40,30,15,0.12)" stroke-width="1" stroke-linecap="round" filter="url(#blur2)"/>
+      <!-- Small handwritten note scribble -->
+      <path d="M 55 180 L 90 177 M 55 187 L 85 184 M 55 194 L 78 192" fill="none" stroke="rgba(40,30,15,0.15)" stroke-width="1" stroke-linecap="round"/>
+
+      <!-- General paper darkening — bottom corners -->
+      <radial-gradient id="rg1"/>
+      <rect x="0" y="500" width="200" height="180" fill="url(#corner-dark-bl)" opacity="0.4"/>
+      <ellipse cx="60" cy="620" rx="130" ry="90" fill="rgba(60,35,5,0.12)" filter="url(#blur6)"/>
+      <ellipse cx="950" cy="640" rx="100" ry="70" fill="rgba(60,35,5,0.10)" filter="url(#blur6)"/>
+
+      <!-- General aged yellowing patches -->
+      <ellipse cx="500" cy="150" rx="200" ry="60" fill="rgba(180,140,60,0.04)" filter="url(#blur6)"/>
+      <ellipse cx="200" cy="550" rx="150" ry="80" fill="rgba(140,100,40,0.06)" filter="url(#blur6)"/>
+
+      <!-- Map fragment — center bottom, taped -->
+      <!-- Tape strips -->
+      <rect x="390" y="578" width="80" height="14" rx="1" fill="rgba(210,200,170,0.55)" transform="rotate(-3 430 585)" filter="url(#blur2)"/>
+      <rect x="530" y="580" width="80" height="14" rx="1" fill="rgba(210,200,170,0.55)" transform="rotate(4 570 587)" filter="url(#blur2)"/>
+      <!-- Map paper piece — slightly rotated, torn edges -->
+      <g transform="rotate(-2 500 620)">
+        <path d="M 370 590 Q 372 588 380 591 L 630 591 Q 635 589 638 592 L 636 668 Q 634 672 628 670 L 372 670 Q 368 672 366 668 Z"
+          fill="#c8bfa0" stroke="rgba(80,55,20,0.4)" stroke-width="0.5"/>
+        <!-- Map torn top edge -->
+        <path d="M 370 590 Q 378 584 385 591 Q 392 585 400 592 Q 408 585 416 591 Q 424 584 432 591 Q 440 585 448 592 Q 456 585 464 591 Q 472 585 480 592 Q 488 584 496 591 Q 504 585 512 592 Q 520 584 528 591 Q 536 585 544 592 Q 552 584 560 591 Q 568 585 576 592 Q 584 584 592 591 Q 600 585 608 592 Q 616 584 624 591 Q 632 585 638 592"
+          fill="none" stroke="rgba(80,55,20,0.3)" stroke-width="0.5"/>
+        <!-- Map content — Alteria-style topographic lines -->
+        <line x1="380" y1="608" x2="625" y2="608" stroke="rgba(60,45,20,0.2)" stroke-width="0.6"/>
+        <line x1="380" y1="620" x2="625" y2="620" stroke="rgba(60,45,20,0.2)" stroke-width="0.6"/>
+        <line x1="380" y1="632" x2="625" y2="632" stroke="rgba(60,45,20,0.2)" stroke-width="0.6"/>
+        <line x1="380" y1="644" x2="625" y2="644" stroke="rgba(60,45,20,0.2)" stroke-width="0.6"/>
+        <line x1="380" y1="656" x2="625" y2="656" stroke="rgba(60,45,20,0.2)" stroke-width="0.6"/>
+        <!-- Contour lines / terrain -->
+        <path d="M 390 600 Q 420 595 450 605 Q 480 615 510 600 Q 540 588 570 598 Q 600 608 625 600" fill="none" stroke="rgba(60,45,20,0.25)" stroke-width="0.8"/>
+        <path d="M 385 615 Q 415 608 445 618 Q 475 628 505 614 Q 535 600 565 612 Q 595 622 625 614" fill="none" stroke="rgba(60,45,20,0.22)" stroke-width="0.8"/>
+        <path d="M 385 628 Q 410 622 440 632 Q 465 640 495 628 Q 520 616 550 626 Q 580 636 620 628" fill="none" stroke="rgba(60,45,20,0.2)" stroke-width="0.8"/>
+        <path d="M 390 642 Q 420 636 455 645 Q 490 653 520 641 Q 550 628 580 638 Q 605 646 625 640" fill="none" stroke="rgba(60,45,20,0.18)" stroke-width="0.8"/>
+        <!-- Road/path lines -->
+        <path d="M 430 592 Q 435 620 428 655 Q 425 665 422 670" fill="none" stroke="rgba(80,60,20,0.3)" stroke-width="1.2" stroke-dasharray="4 2"/>
+        <path d="M 510 592 Q 505 615 518 640 Q 530 660 525 670" fill="none" stroke="rgba(80,60,20,0.3)" stroke-width="1.2" stroke-dasharray="4 2"/>
+        <!-- Town marker dot -->
+        <circle cx="468" cy="630" r="3" fill="rgba(80,50,20,0.4)"/>
+        <circle cx="468" cy="630" r="1.5" fill="rgba(80,50,20,0.6)"/>
+        <!-- Small text label -->
+        <text x="474" y="633" font-family="'Courier Prime',monospace" font-size="5" fill="rgba(60,40,15,0.5)">ALTAR</text>
+        <!-- Compass rose, tiny -->
+        <text x="610" y="665" font-family="'Bebas Neue',sans-serif" font-size="7" fill="rgba(60,40,15,0.4)">N</text>
+        <line x1="614" y1="657" x2="614" y2="652" stroke="rgba(60,40,15,0.4)" stroke-width="0.8"/>
+        <!-- Scale bar -->
+        <line x1="385" y1="666" x2="415" y2="666" stroke="rgba(60,40,15,0.4)" stroke-width="1"/>
+        <line x1="385" y1="663" x2="385" y2="669" stroke="rgba(60,40,15,0.4)" stroke-width="0.8"/>
+        <line x1="415" y1="663" x2="415" y2="669" stroke="rgba(60,40,15,0.4)" stroke-width="0.8"/>
+        <text x="388" y="662" font-family="'Courier Prime',monospace" font-size="4.5" fill="rgba(60,40,15,0.4)">1km</text>
+        <!-- Map age stain -->
+        <ellipse cx="580" cy="635" rx="30" ry="20" fill="rgba(120,90,30,0.07)" filter="url(#blur4)"/>
+      </g>
+    </svg>
+    <!-- Folded corner -->
+    <div class="doc-fold"></div>
+    <!-- Torn bottom edge -->
+    <div class="doc-torn-bottom"></div>
+    <div class="doc-inner">
+      <div class="doc-header">
+        <div class="header-left">
+          <div class="eyebrow">Field Dossier — Build Planner</div>
+          <div class="title">Skill Build Planner</div>
+        </div>
+        <div class="stamp-classified">Classified</div>
+      </div>
+      <div class="planner-bar">
+        <div class="planner-counter">
+          <span class="num ok" id="plan-used">0</span>
+          <span class="denom">/55</span>
+          <span class="lbl">Skills Planned</span>
+        </div>
+        <div class="planner-divider"></div>
+        <div class="planner-xp">
+          <span class="lbl">Total XP Cost</span>
+          <span class="val" id="plan-xp-total">0 XP</span>
+        </div>
+        <div class="planner-divider"></div>
+        <div class="planner-tree-counts">
+          <div class="tree-count-pill"><span class="tc-name">Gather</span><span class="tc-val" id="tc-gathering">0</span></div>
+          <div class="tree-count-pill"><span class="tc-name">Hunt</span><span class="tc-val" id="tc-hunting">0</span></div>
+          <div class="tree-count-pill"><span class="tc-name">Craft</span><span class="tc-val" id="tc-crafting">0</span></div>
+          <div class="tree-count-pill"><span class="tc-name">Survive</span><span class="tc-val" id="tc-survival">0</span></div>
+        </div>
+        <div class="planner-actions">
+          <button class="plan-btn reset" onclick="resetBuild()">↺ RESET</button>
+          <button class="plan-btn share" onclick="openShare()">⤴ SHARE BUILD</button>
+        </div>
+      </div>
+      <div class="hub-canvas">
+        <button class="tree-btn tl" onclick="openTree('gathering')">
+          <span class="btn-name">Gathering</span>
+          <span class="btn-sub">Foraging Ops</span>
+        </button>
+        <button class="tree-btn tr" onclick="openTree('crafting')">
+          <span class="btn-name">Crafting</span>
+          <span class="btn-sub">Fabrication Ops</span>
+        </button>
+        <button class="tree-btn bl" onclick="openTree('hunting')">
+          <span class="btn-name">Hunting</span>
+          <span class="btn-sub">Field Ops</span>
+        </button>
+        <button class="tree-btn br" onclick="openTree('survival')">
+          <span class="btn-name">Survival</span>
+          <span class="btn-sub">Endurance Ops</span>
+        </button>
+
+        <svg class="hub-svg" id="hub-svg" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="gw"><feGaussianBlur stdDeviation="2.5" result="b"/><feFlood flood-color="#e8dfd0" flood-opacity="0.7" result="c"/><feComposite in="c" in2="b" operator="in" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="gr"><feGaussianBlur stdDeviation="3" result="b"/><feFlood flood-color="#9b1c1c" flood-opacity="0.5" result="c"/><feComposite in="c" in2="b" operator="in" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+
+          <!-- Lines from center -->
+          <g stroke="#3d2b14" stroke-width="1" opacity="0.35" fill="none">
+            <!-- Gathering TL -->
+            <line x1="500" y1="250" x2="310" y2="155"/><line x1="310" y1="155" x2="220" y2="115"/><line x1="220" y1="115" x2="155" y2="88"/><line x1="310" y1="155" x2="235" y2="180"/><line x1="235" y1="180" x2="170" y2="192"/><line x1="170" y1="192" x2="110" y2="178"/><line x1="235" y1="180" x2="188" y2="222"/>
+            <!-- Crafting TR -->
+            <line x1="500" y1="250" x2="690" y2="155"/><line x1="690" y1="155" x2="780" y2="115"/><line x1="780" y1="115" x2="845" y2="88"/><line x1="690" y1="155" x2="765" y2="180"/><line x1="765" y1="180" x2="830" y2="192"/><line x1="830" y1="192" x2="890" y2="178"/><line x1="765" y1="180" x2="812" y2="222"/>
+            <!-- Hunting BL -->
+            <line x1="500" y1="250" x2="310" y2="345"/><line x1="310" y1="345" x2="220" y2="385"/><line x1="220" y1="385" x2="155" y2="412"/><line x1="310" y1="345" x2="235" y2="320"/><line x1="235" y1="320" x2="170" y2="308"/><line x1="170" y1="308" x2="110" y2="322"/><line x1="235" y1="320" x2="188" y2="278"/>
+            <!-- Survival BR -->
+            <line x1="500" y1="250" x2="690" y2="345"/><line x1="690" y1="345" x2="780" y2="385"/><line x1="780" y1="385" x2="845" y2="412"/><line x1="690" y1="345" x2="765" y2="320"/><line x1="765" y1="320" x2="830" y2="308"/><line x1="830" y1="308" x2="890" y2="322"/><line x1="765" y1="320" x2="812" y2="278"/>
+          </g>
+
+          <!-- Dynamic hub nodes rendered by JS -->
+          <g id="hub-nodes"></g>
+
+          <!-- Skill XP ring around center -->
+          <circle cx="500" cy="250" r="46" fill="none" stroke="#3d2b14" stroke-width="1" stroke-dasharray="5 4" opacity="0.4"/>
+          <circle cx="500" cy="250" r="46" fill="none" stroke="#9b1c1c" stroke-width="3" stroke-linecap="round"
+            stroke-dasharray="121 168" transform="rotate(-90 500 250)" opacity="0.9" id="hub-xp-ring"/>
+          <circle cx="500" cy="250" r="28" fill="#c2b49a" stroke="#3d2b14" stroke-width="2"/>
+          <text x="500" y="246" text-anchor="middle" font-family="'Special Elite',cursive" font-size="9" fill="#3d2b14">YOU</text>
+          <text x="500" y="258" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="8" letter-spacing="1" fill="#9b1c1c" id="hub-center-xp">420 XP</text>
+        </svg>
+      </div>
+      <div class="hub-footer">
+        <span class="footer-note">DayZRP — Skill Build Planner — No Reset In-Game, Plan Carefully</span>
+        <span class="footer-xp" id="hub-footer-xp">0 / 55 SKILLS PLANNED</span>
+      </div>
+    </div><!-- /doc-inner -->
+  </div><!-- /doc -->
+</div><!-- /hub -->
+
+<!-- ===== TREE SCREEN ===== -->
+<div class="screen" id="tree-screen">
+  <div class="doc">
+    <!-- Weathering layer (shared aesthetic) -->
+    <svg class="weathering" viewBox="0 0 1000 680" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <defs>
+        <filter id="tblur2"><feGaussianBlur stdDeviation="2"/></filter>
+        <filter id="tblur4"><feGaussianBlur stdDeviation="4"/></filter>
+        <filter id="tblur6"><feGaussianBlur stdDeviation="6"/></filter>
+      </defs>
+      <!-- Water damage left -->
+      <ellipse cx="80" cy="380" rx="70" ry="160" fill="none" stroke="rgba(100,70,20,0.1)" stroke-width="7" filter="url(#tblur4)"/>
+      <ellipse cx="80" cy="380" rx="55" ry="135" fill="rgba(100,70,20,0.03)" filter="url(#tblur6)"/>
+      <!-- Coffee ring — lower right of node area -->
+      <circle cx="520" cy="520" r="42" fill="none" stroke="rgba(80,45,10,0.18)" stroke-width="3.5" filter="url(#tblur2)"/>
+      <circle cx="520" cy="520" r="37" fill="none" stroke="rgba(80,45,10,0.08)" stroke-width="8" filter="url(#tblur4)"/>
+      <path d="M 520 478 A 42 42 0 0 1 558 512" fill="none" stroke="rgba(214,201,176,0.9)" stroke-width="5"/>
+      <!-- Blood smear — top right corner -->
+      <path d="M 870 55 Q 910 48 940 62 Q 950 72 940 82 Q 920 88 895 80 Q 875 72 870 55Z" fill="rgba(100,10,10,0.15)" filter="url(#tblur2)"/>
+      <!-- Pencil marks -->
+      <path d="M 150 85 L 185 82 L 182 90 L 210 86" fill="none" stroke="rgba(40,30,15,0.15)" stroke-width="1.1" stroke-linecap="round" filter="url(#tblur2)"/>
+      <!-- Corner darkening -->
+      <ellipse cx="50" cy="640" rx="110" ry="80" fill="rgba(60,35,5,0.10)" filter="url(#tblur6)"/>
+      <ellipse cx="960" cy="650" rx="90" ry="65" fill="rgba(60,35,5,0.08)" filter="url(#tblur6)"/>
+      <!-- Yellowing patch -->
+      <ellipse cx="400" cy="200" rx="180" ry="70" fill="rgba(180,140,60,0.03)" filter="url(#tblur6)"/>
+    </svg>
+    <!-- Folded corner -->
+    <div class="doc-fold"></div>
+    <!-- Torn bottom edge -->
+    <div class="doc-torn-bottom"></div>
+    <div class="doc-inner">
+      <div class="tree-header">
+        <button class="back-btn" onclick="goBack()">◂ BACK</button>
+        <span class="tree-title-text" id="tree-title">Tree</span>
+        <div class="tier-xp-area">
+          <span class="tier-xp-label" id="tier-xp-label">Skills in Tree</span>
+          <span class="tier-xp-val" id="tier-xp-val" style="font-family:'Bebas Neue',sans-serif;font-size:16px;">0</span>
+          <span class="tier-xp-label" style="margin-left:8px;">Total XP</span>
+          <span class="tier-xp-val" id="tier-xp-fill-display" style="font-family:'Bebas Neue',sans-serif;font-size:16px;">0</span>
+        </div>
+      </div>
+
+      <div class="tree-body">
+        <!-- Tier sidebar -->
+        <div class="tier-sidebar" id="tier-sidebar">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Node canvas -->
+        <div class="node-canvas">
+          <svg class="node-svg" id="node-svg" viewBox="0 0 560 520" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <filter id="nw"><feGaussianBlur stdDeviation="3" result="b"/><feFlood flood-color="#e8dfd0" flood-opacity="0.8" result="c"/><feComposite in="c" in2="b" operator="in" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="nr"><feGaussianBlur stdDeviation="4" result="b"/><feFlood flood-color="#9b1c1c" flood-opacity="0.6" result="c"/><feComposite in="c" in2="b" operator="in" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="nh"><feGaussianBlur stdDeviation="5" result="b"/><feFlood flood-color="#c0392b" flood-opacity="0.7" result="c"/><feComposite in="c" in2="b" operator="in" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <g id="tier-lines-group"></g>
+            <g id="tree-lines-group"></g>
+            <g id="tree-nodes-group"></g>
+          </svg>
+        </div>
+
+        <!-- Info panel -->
+        <div class="info-panel">
+          <div class="info-empty" id="info-empty">
+            <div class="info-empty-stamp">SELECT</div>
+            <div class="info-empty-note">Click a node to inspect</div>
+          </div>
+          <div class="info-content" id="info-content">
+            <div class="info-badge" id="info-badge">TIER 1</div>
+            <div class="plan-node-status available" id="plan-status">NOT PLANNED</div>
+            <div class="info-name" id="info-name">Skill Name</div>
+            <div class="info-divider"></div>
+            <div class="info-desc" id="info-desc">Description</div>
+            <div class="info-perks-title">Perks</div>
+            <div class="info-perks" id="info-perks"></div>
+            <div class="info-footer">
+              <div class="cost-area">
+                <div class="cost-label">Skill XP Cost</div>
+                <div class="cost-val" id="info-cost">50</div>
+              </div>
+              <button class="act-btn" id="act-btn" onclick="purchaseNode()">ACQUIRE</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tree-footer">
+        <span class="footer-note" id="tree-stamp-text">—</span>
+        <span class="skill-xp-display">PLANNED: <strong id="tree-skill-xp">0</strong> / 55 &nbsp;|&nbsp; XP: <strong id="tree-xp-cost">0</strong></span>
+      </div>
+    </div><!-- /doc-inner -->
+  </div><!-- /doc -->
+</div><!-- /tree-screen -->
+
+<!-- Warning toast -->
+<div class="warn-toast" id="warn-toast"></div>
+
+<!-- Share modal -->
+<div class="share-modal" id="share-modal">
+  <div class="share-box">
+    <button class="share-close" onclick="closeShare()">✕ CLOSE</button>
+    <h2>Share Your Build</h2>
+    <p>Copy the code below and share it with other survivors.<br>They can paste it into the planner to load your build.</p>
+    <textarea class="share-code" id="share-code" readonly></textarea>
+    <div class="share-btns">
+      <button class="share-copy" onclick="copyCode()">COPY CODE</button>
+      <button class="share-load" onclick="loadCode()">LOAD CODE</button>
+    </div>
+    <p style="margin-top:10px;font-size:9px;opacity:0.6;">To load a build, paste a code into the box above and click LOAD CODE.</p>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// PLANNER STATE
+// ============================================================
+const MAX_SKILLS = 55;
+let currentTreeKey = null;
+let selectedNode = null;
+
+// Tier unlock costs (tree XP) — informational only in planner
+const TIER_COSTS = [0, 0, 400, 700, 1000];
+
+// Skill XP costs per tier per level
+const SKILL_COSTS = {
+  1: { l1:200, l2:250, l3:300, solo:300 },
+  2: { l1:250, l2:300, l3:350, solo:350 },
+  3: { l1:300, l2:350, l3:400, solo:400 },
+  4: { l1:400, l2:500, l3:600, solo:600 },
+};
+
+// ============================================================
+// TREE DATA
+// Each tree has: name, label, treeXP, treeXPMax, unlockedTiers[], skills[]
+// Each skill has: id, tier, name, desc, levels[] (array of perk strings, 1-3)
+//   isBridge, cost (skill XP cost for parent node), purchased (parent)
+//   levelPurchased[1,2] for level 2 and 3 nodes
+// ============================================================
+const TREES = {
+  gathering: {
+    name:'Gathering Tree', label:'Gathering', stamp:'GATHERING',
+    treeXP: 350, treeXPMax: 1000,
+    unlockedTiers: [1, 2],
+    skills: [
+      { id:'g1', tier:1, name:"Deft Hands",
+        desc:"You gain more experience from gathering activities.",
+        levels:[
+          "5% more XP from gathering activities, across all trees.",
+          "10% more XP from gathering activities, across all trees.",
+          "15% more XP from gathering activities, across all trees."
+        ],
+        isBridge:false, cost:200, purchased:false, levelPurchased:[false,false] },
+      { id:'g2', tier:1, name:"Woodsman",
+        desc:"You extract more usable material when gathering wood.",
+        levels:[
+          "10% chance to obtain additional logs or firewood when gathering.",
+          "20% chance to obtain additional logs or firewood when gathering.",
+          "30% chance to obtain additional logs or firewood when gathering."
+        ],
+        isBridge:false, cost:200, purchased:false, levelPurchased:[false,false] },
+      { id:'g3', tier:2, name:"Cultivator",
+        desc:"You plant and harvest crops more efficiently.",
+        levels:[
+          "Planting and harvesting crops is 10% faster.",
+          "Planting and harvesting crops is 20% faster.",
+          "Planting and harvesting crops is 30% faster."
+        ],
+        isBridge:false, cost:250, purchased:false, levelPurchased:[false,false] },
+      { id:'g4', tier:2, name:"Fertile Ground",
+        desc:"You make better use of soil treatments.",
+        levels:[
+          "10% chance to not consume fertilizer when fertilizing crops.",
+          "20% chance to not consume fertilizer when fertilizing crops.",
+          "30% chance to not consume fertilizer when fertilizing crops."
+        ],
+        isBridge:false, cost:250, purchased:false, levelPurchased:[false,false] },
+      { id:'g5', tier:3, name:"Crop Knowledge",
+        desc:"Your crops grow more efficiently.",
+        levels:[
+          "Crop growth time reduced by 10%.",
+          "Crop growth time reduced by 20%.",
+          "Crop growth time reduced by 30%."
+        ],
+        isBridge:false, cost:300, purchased:false, levelPurchased:[false,false] },
+      { id:'g6', tier:3, name:"Forager",
+        desc:"You gather wild plants more efficiently.",
+        levels:[
+          "15% chance to obtain additional wild plants or mushrooms."
+        ],
+        isBridge:true, cost:400, purchased:false, levelPurchased:[] },
+      { id:'g7', tier:3, name:"Survivalist",
+        desc:"You preserve natural resources more effectively.",
+        levels:[
+          "Gathered food items spoil 20% slower."
+        ],
+        isBridge:false, cost:400, purchased:false, levelPurchased:[] },
+      { id:'g8', tier:4, name:"Master Gardener",
+        desc:"You make better use of what you gather.",
+        levels:[
+          "10% chance to harvest additional crops.",
+          "20% chance to harvest additional crops.",
+          "30% chance to harvest additional crops."
+        ],
+        isBridge:false, cost:400, purchased:false, levelPurchased:[false,false] },
+      { id:'g9', tier:4, name:"Field Forager",
+        desc:"You excel at gathering from the wild.",
+        levels:[
+          "35% chance to obtain additional wild plants or mushrooms. Gathering wild plants is 25% faster."
+        ],
+        isBridge:false, cost:600, purchased:false, levelPurchased:[] }
+    ]
+  },
+  hunting: {
+    name:'Hunting Tree', label:'Hunting', stamp:'HUNTING',
+    treeXP: 100, treeXPMax: 1000,
+    unlockedTiers: [1],
+    skills: [
+      { id:'h1', tier:1, name:"My Grandad's M4",
+        desc:"You gain more experience from hunting.",
+        levels:[
+          "5% more XP from hunting activities, across all trees.",
+          "10% more XP from hunting activities, across all trees.",
+          "15% more XP from hunting activities, across all trees."
+        ],
+        isBridge:false, cost:200, purchased:false, levelPurchased:[false,false] },
+      { id:'h2', tier:1, name:"Steady Hand",
+        desc:"Tools used in animal processing and fishing poles lose less durability.",
+        levels:[
+          "Tools and fishing poles lose 10% less durability.",
+          "Tools and fishing poles lose 20% less durability.",
+          "Tools and fishing poles lose 30% less durability."
+        ],
+        isBridge:false, cost:200, purchased:false, levelPurchased:[false,false] },
+      { id:'h3', tier:2, name:"Proper Tools",
+        desc:"You minimize waste when processing animals, even with worn or damaged tools.",
+        levels:[
+          "Reduces penalties from damaged tools by 15%.",
+          "Reduces penalties from damaged tools by 30%.",
+          "Reduces penalties from damaged tools by 50%."
+        ],
+        isBridge:false, cost:250, purchased:false, levelPurchased:[false,false] },
+      { id:'h4', tier:2, name:"Clean Cuts",
+        desc:"You process animals with precision.",
+        levels:[
+          "20% chance to obtain an additional pelt. Pelts are more likely to be in better condition."
+        ],
+        isBridge:false, cost:350, purchased:false, levelPurchased:[] },
+      { id:'h5', tier:3, name:"Filet Master",
+        desc:"You process fish with greater efficiency.",
+        levels:[
+          "15% chance to obtain an additional filet when processing fish.",
+          "25% chance to obtain an additional filet when processing fish.",
+          "40% chance to obtain an additional filet when processing fish."
+        ],
+        isBridge:false, cost:300, purchased:false, levelPurchased:[false,false] },
+      { id:'h6', tier:3, name:"Fat Harvest",
+        desc:"You extract more usable fat from animals.",
+        levels:[
+          "10% chance to obtain additional fat while skinning.",
+          "20% chance to obtain additional fat while skinning.",
+          "30% chance to obtain additional fat while skinning."
+        ],
+        isBridge:true, cost:300, purchased:false, levelPurchased:[false,false] },
+      { id:'h7', tier:3, name:"Master Tracker",
+        desc:"You are able to track animals using the animal tracking system.",
+        levels:[
+          "Can track animals within 100m.",
+          "Can track animals within 200m.",
+          "Can track animals within 300m."
+        ],
+        isBridge:false, cost:300, purchased:false, levelPurchased:[false,false] },
+      { id:'h8', tier:4, name:"Master Hunter",
+        desc:"You extract maximum value from every animal.",
+        levels:[
+          "35% chance to obtain additional meat when processing animals. Skinning animals is 25% faster."
+        ],
+        isBridge:false, cost:600, purchased:false, levelPurchased:[] },
+      { id:'h9', tier:4, name:"Master Angler",
+        desc:"You fish with expert efficiency.",
+        levels:[
+          "30% chance to not consume bait when fishing. 30% chance to not lose hook durability. 25% increased chance to catch fish."
+        ],
+        isBridge:false, cost:600, purchased:false, levelPurchased:[] }
+    ]
+  },
+  crafting: {
+    name:'Crafting Tree', label:'Crafting', stamp:'CRAFTING',
+    treeXP: 750, treeXPMax: 1000,
+    unlockedTiers: [1, 2, 3],
+    skills: [
+      { id:'c1', tier:1, name:"Work Rhythm",
+        desc:"You gain more experience from crafting & building activities.",
+        levels:[
+          "5% more XP from all crafting activities, across all trees.",
+          "10% more XP from all crafting activities, across all trees.",
+          "15% more XP from all crafting activities, across all trees."
+        ],
+        isBridge:false, cost:200, purchased:false, levelPurchased:[false,false] },
+      { id:'c2', tier:1, name:"Waste Not, Want Not",
+        desc:"You use your spray cans more efficiently.",
+        levels:[
+          "10% chance to not lose durability when using a spray can for graffiti.",
+          "20% chance to not lose durability when using a spray can for graffiti.",
+          "30% chance to not lose durability when using a spray can for graffiti."
+        ],
+        isBridge:false, cost:200, purchased:false, levelPurchased:[false,false] },
+      { id:'c3', tier:2, name:"Tool Familiarity",
+        desc:"You use tools efficiently, reducing wear.",
+        levels:[
+          "Tools last 10% longer.",
+          "Tools last 20% longer.",
+          "Tools last 30% longer."
+        ],
+        isBridge:false, cost:250, purchased:false, levelPurchased:[false,false] },
+      { id:'c4', tier:2, name:"Quick Tagger",
+        desc:"You apply equipment more quickly.",
+        levels:[
+          "Blowtorches, tire kits, weapon kits, and electronic kits work 10% faster.",
+          "Blowtorches, tire kits, weapon kits, and electronic kits work 25% faster.",
+          "Blowtorches, tire kits, weapon kits, and electronic kits work 40% faster."
+        ],
+        isBridge:false, cost:250, purchased:false, levelPurchased:[false,false] },
+      { id:'c5', tier:3, name:"Heavy Duty",
+        desc:"You extend the life of complex repair equipment.",
+        levels:[
+          "Blowtorches, tire kits, weapon kits, and electronic kits last 5% longer.",
+          "Blowtorches, tire kits, weapon kits, and electronic kits last 10% longer.",
+          "Blowtorches, tire kits, weapon kits, and electronic kits last 15% longer."
+        ],
+        isBridge:false, cost:300, purchased:false, levelPurchased:[false,false] },
+      { id:'c6', tier:3, name:"Honed Edge",
+        desc:"You maintain sharpening tools with precision.",
+        levels:[
+          "Sharpening stones and epoxy last 15% longer.",
+          "Sharpening stones and epoxy last 30% longer.",
+          "Sharpening stones and epoxy last 50% longer."
+        ],
+        isBridge:true, cost:300, purchased:false, levelPurchased:[false,false] },
+      { id:'c7', tier:3, name:"Stitchwork",
+        desc:"You repair clothing and soft gear efficiently.",
+        levels:[
+          "Duct tape, sewing kits, and leather kits last 10% longer.",
+          "Duct tape, sewing kits, and leather kits last 20% longer.",
+          "Duct tape, sewing kits, and leather kits last 30% longer."
+        ],
+        isBridge:false, cost:300, purchased:false, levelPurchased:[false,false] },
+      { id:'c8', tier:4, name:"Mastercraft",
+        desc:"You work quickly and efficiently with your hands.",
+        levels:[
+          "Crafting actions 20% faster. Crafting actions have a 20% chance to not consume required materials."
+        ],
+        isBridge:false, cost:600, purchased:false, levelPurchased:[] },
+      { id:'c9', tier:4, name:"Precision Repairs",
+        desc:"Your repairs are more effective and efficient.",
+        levels:[
+          "Repair actions restore 15% more durability per use. Repair actions are 25% faster."
+        ],
+        isBridge:false, cost:600, purchased:false, levelPurchased:[] }
+    ]
+  },
+  survival: {
+    name:'Survival Tree', label:'Survival', stamp:'SURVIVAL',
+    treeXP: 500, treeXPMax: 1000,
+    unlockedTiers: [1, 2],
+    skills: [
+      { id:'s1', tier:1, name:"Dialed In",
+        desc:"You adapt more quickly to the world around you.",
+        levels:[
+          "5% more XP from all survival activities, across all trees.",
+          "10% more XP from all survival activities, across all trees.",
+          "15% more XP from all survival activities, across all trees."
+        ],
+        isBridge:false, cost:200, purchased:false, levelPurchased:[false,false] },
+      { id:'s2', tier:1, name:"Homeostasis",
+        desc:"Your body is able to self-regulate negative effects.",
+        levels:[
+          "Temperature loss reduced by 15%.",
+          "Passive drying speed increased by 15%."
+        ],
+        isBridge:false, cost:200, purchased:false, levelPurchased:[false] },
+      { id:'s3', tier:2, name:"Campfire Mastery",
+        desc:"You are skilled at building and maintaining effective fires.",
+        levels:[
+          "+10% warmth from fires. Heat buff lasts 10% longer.",
+          "+20% warmth from fires. Heat buff lasts 20% longer.",
+          "+30% warmth from fires. Heat buff lasts 30% longer."
+        ],
+        isBridge:false, cost:250, purchased:false, levelPurchased:[false,false] },
+      { id:'s4', tier:2, name:"Endurance",
+        desc:"You expend less energy while pushing your limits.",
+        levels:[
+          "Calorie drain while sprinting reduced by 30%. Hydration drain while sprinting reduced by 30%."
+        ],
+        isBridge:false, cost:350, purchased:false, levelPurchased:[] },
+      { id:'s5', tier:3, name:"Field Dressing",
+        desc:"You are able to create proper medical supplies from basic materials in the field.",
+        levels:[
+          "Can craft bandages using rags and alcohol tincture.",
+          "25% chance to create an additional bandage when crafting."
+        ],
+        isBridge:false, cost:300, purchased:false, levelPurchased:[false] },
+      { id:'s6', tier:3, name:"Thick Skin",
+        desc:"You are more resistant to infected attacks.",
+        levels:[
+          "10% reduced chance of bleeding from infected hits. 10% reduced chance of infection.",
+          "20% reduced chance of bleeding from infected hits. 15% reduced chance of infection.",
+          "25% reduced chance of bleeding from infected hits. 20% reduced chance of infection."
+        ],
+        isBridge:true, cost:300, purchased:false, levelPurchased:[false,false] },
+      { id:'s7', tier:3, name:"Well Fed",
+        desc:"You maintain your nourishment longer when properly fed.",
+        levels:[
+          "Energy and hydration deplete 10% slower while above full (white).",
+          "Energy and hydration deplete 15% slower while above full (white).",
+          "Energy and hydration deplete 20% slower while above full (white)."
+        ],
+        isBridge:false, cost:300, purchased:false, levelPurchased:[false,false] },
+      { id:'s8', tier:4, name:"Last Stand",
+        desc:"You are able to endure critical conditions longer than most.",
+        levels:[
+          "Negative effects from low energy and hydration reduced by 30%. Health regeneration does not fully stop while energy or hydration are in yellow."
+        ],
+        isBridge:false, cost:600, purchased:false, levelPurchased:[] },
+      { id:'s9', tier:4, name:"Field Medic",
+        desc:"You handle injuries efficiently in the field.",
+        levels:[
+          "Bandaging and splinting yourself 15% faster. Bandaging others 10% faster.",
+          "Bandaging yourself 25% faster. Bandaging others 20% faster. Bandaging yourself uses 25% less durability.",
+          "Bandaging yourself 35% faster. Bandaging others 30% faster. Bandaging others uses 25% less durability."
+        ],
+        isBridge:false, cost:400, purchased:false, levelPurchased:[false,false] }
+    ]
+  }
+};
+
+// ============================================================
+// NODE LAYOUT
+// 9 skills per tree in a top-down flow:
+//   T1: 2 nodes (left, right) — row y=70
+//   T2: 2 nodes — row y=200
+//   T3: 3 nodes (left, bridge-center, right) — row y=330
+//   T4: 2 nodes — row y=450
+// Satellite nodes for levels 2 and 3 orbit the parent
+// ============================================================
+const SKILL_POS = [
+  {x:170, y:70,  r:22}, // skill[0] T1-left
+  {x:390, y:70,  r:22}, // skill[1] T1-right
+  {x:120, y:205, r:19}, // skill[2] T2-left
+  {x:440, y:205, r:19}, // skill[3] T2-right
+  {x:80,  y:340, r:17}, // skill[4] T3-left
+  {x:280, y:355, r:22}, // skill[5] T3-bridge
+  {x:480, y:340, r:17}, // skill[6] T3-right
+  {x:155, y:465, r:20}, // skill[7] T4-left
+  {x:405, y:465, r:20}, // skill[8] T4-right
+];
+
+// Satellite offsets for level 2 and level 3 (relative to parent center)
+const SAT = [
+  {dx:-32, dy:-18, r:10}, // level 2 satellite
+  {dx:32,  dy:-18, r:10}, // level 3 satellite
+];
+
+// Connections between skill indices
+// Bridge (index 5) ONLY connects horizontally to Left T3 [4] and Right T3 [6].
+// No other connections to or from the bridge.
+const CONNECTIONS = [
+  [0,2],[1,3],   // T1 -> T2 each side
+  [2,4],[3,6],   // T2 -> T3 outer (left and right)
+  [4,5],[5,6],   // Bridge horizontal only — bridge connects to nothing else
+  [4,7],[6,8],   // T3 outer -> T4 each side (bridge not involved)
+];
+
+// Tier line y-positions (horizontal dividers)
+const TIER_Y = [135, 270, 405];
+
+function openTree(key) {
+  currentTreeKey = key;
+  const tree = TREES[key];
+  document.getElementById('hub').classList.remove('active');
+  document.getElementById('tree-screen').classList.add('active');
+  document.getElementById('tree-title').textContent = tree.name;
+  document.getElementById('tier-xp-label').textContent = tree.label + ' Skills';
+  document.getElementById('tree-stamp-text').textContent = 'DayZRP — ' + tree.label + ' — Plan Carefully, No Resets';
+  clearInfo();
+  renderTierSidebar(tree);
+  renderTree(tree);
+  updateTreeHeader(tree);
+}
+
+function updateTreeHeader(tree) {
+  const treeSkills = countTreePlanned(tree);
+  const treeXP = calcTreeXP(tree);
+  document.getElementById('tier-xp-val').textContent = treeSkills;
+  document.getElementById('tier-xp-fill-display').textContent = treeXP + ' XP';
+  document.getElementById('tree-skill-xp').textContent = countTotalPlanned();
+  document.getElementById('tree-xp-cost').textContent = calcTotalXP();
+}
+
+function countTotalPlanned() {
+  let total = 0;
+  Object.values(TREES).forEach(tree => { total += countTreePlanned(tree); });
+  return total;
+}
+
+function calcTotalXP() {
+  let total = 0;
+  Object.values(TREES).forEach(tree => { total += calcTreeXP(tree); });
+  return total;
+}
+
+function countTreePlanned(tree) {
+  let count = 0;
+  tree.skills.forEach(skill => {
+    if (skill.purchased) count++;
+    if (skill.levelPurchased) skill.levelPurchased.forEach(lp => { if (lp) count++; });
+  });
+  return count;
+}
+
+function calcTreeXP(tree) {
+  let xp = 0;
+  const costs = SKILL_COSTS;
+  tree.skills.forEach(skill => {
+    if (skill.purchased) xp += skill.cost;
+    if (skill.levelPurchased && skill.levelPurchased.length > 0) {
+      if (skill.levelPurchased[0]) xp += costs[skill.tier].l2;
+      if (skill.levelPurchased[1]) xp += costs[skill.tier].l3;
+    }
+  });
+  return xp;
+}
+
+function updatePlannerBar() {
+  const total = countTotalPlanned();
+  const totalXP = calcTotalXP();
+  const numEl = document.getElementById('plan-used');
+  numEl.textContent = total;
+  numEl.className = 'num ' + (total > 55 ? 'over' : total >= 50 ? 'warn' : 'ok');
+  document.getElementById('plan-xp-total').textContent = totalXP.toLocaleString() + ' XP';
+  document.getElementById('hub-footer-xp').textContent = total + ' / 55 SKILLS PLANNED';
+
+  // Per-tree counts
+  Object.keys(TREES).forEach(k => {
+    const el = document.getElementById('tc-' + k);
+    if (el) el.textContent = countTreePlanned(TREES[k]);
+  });
+
+  // Update hub center XP ring text
+  const centerXP = document.getElementById('hub-center-xp');
+  if (centerXP) centerXP.textContent = total + '/55';
+}
+
+function renderTierSidebar(tree) {
+  const sb = document.getElementById('tier-sidebar');
+  sb.innerHTML = '';
+  for (let t = 1; t <= 4; t++) {
+    const cost = TIER_COSTS[t];
+    const div = document.createElement('div');
+    div.className = 'tier-block';
+    const skillsInTier = tree.skills.filter(s => s.tier === t).length;
+    div.innerHTML = `
+      <div class="tier-num unlocked">T${t}</div>
+      <div class="tier-label" style="color:var(--ink-faded)">TIER ${t}</div>
+      ${t > 1 ? `<div class="tier-cost">${cost} Tree XP</div>` : '<div class="tier-cost" style="color:var(--ink-faded);opacity:0.5">FREE</div>'}
+    `;
+    sb.appendChild(div);
+  }
+}
+
+function getNodeState(skill, tree, level) {
+  if (level === 0) {
+    if (skill.purchased) return 'planned';
+    return 'available';
+  }
+  if (!skill.purchased) return 'locked';
+  const levIdx = level - 1;
+  if (!skill.levelPurchased || skill.levelPurchased[levIdx] === undefined) return 'locked';
+  if (skill.levelPurchased[levIdx]) return 'planned';
+  if (level === 2 && !skill.levelPurchased[0]) return 'locked';
+  return 'available';
+}
+
+function nodeColors(state) {
+  switch(state) {
+    case 'planned':   return {fill:'#e8dfd0', stroke:'#4a7a3a', filter:'url(#nw)'};
+    case 'available': return {fill:'#c2b49a', stroke:'#3d2b14', filter:'url(#nw)'};
+    case 'locked':
+    default:          return {fill:'#1e1710', stroke:'#3d2b14', filter:null};
+  }
+}
+
+function renderTree(tree) {
+  const linesG = document.getElementById('tree-lines-group');
+  const nodesG = document.getElementById('tree-nodes-group');
+  const tierG  = document.getElementById('tier-lines-group');
+  linesG.innerHTML = '';
+  nodesG.innerHTML = '';
+  tierG.innerHTML  = '';
+
+  // Tier divider lines — all available in planner
+  TIER_Y.forEach((y, i) => {
+    const t = i + 2;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1','30'); line.setAttribute('y1', y);
+    line.setAttribute('x2','530'); line.setAttribute('y2', y);
+    line.setAttribute('stroke','#c2b49a'); line.setAttribute('stroke-width','1');
+    line.setAttribute('stroke-dasharray','6 4'); line.setAttribute('opacity','0.4');
+    tierG.appendChild(line);
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x','14'); txt.setAttribute('y', y - 4);
+    txt.setAttribute('font-family',"'Bebas Neue',sans-serif");
+    txt.setAttribute('font-size','9'); txt.setAttribute('fill','#c2b49a');
+    txt.setAttribute('opacity','0.5'); txt.setAttribute('text-anchor','middle');
+    txt.textContent = 'T' + t;
+    tierG.appendChild(txt);
+  });
+
+  // Connections
+  CONNECTIONS.forEach(([a, b]) => {
+    const pa = SKILL_POS[a], pb = SKILL_POS[b];
+    const sa = tree.skills[a], sb2 = tree.skills[b];
+    const bothPlanned = sa.purchased && sb2.purchased;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', pa.x); line.setAttribute('y1', pa.y);
+    line.setAttribute('x2', pb.x); line.setAttribute('y2', pb.y);
+    line.setAttribute('stroke', bothPlanned ? '#4a7a3a' : '#3d2b14');
+    line.setAttribute('stroke-width', bothPlanned ? '2' : '1');
+    line.setAttribute('opacity', bothPlanned ? '0.6' : '0.3');
+    linesG.appendChild(line);
+  });
+
+  // Nodes
+  tree.skills.forEach((skill, i) => {
+    const pos = SKILL_POS[i];
+    const numLevels = skill.levels.length;
+
+    if (numLevels > 1) {
+      for (let lv = 1; lv < numLevels; lv++) {
+        const sat = SAT[lv-1];
+        const sx = pos.x + sat.dx;
+        const sy = pos.y + sat.dy;
+        const state = getNodeState(skill, tree, lv);
+        const col = nodeColors(state);
+
+        const sl = document.createElementNS('http://www.w3.org/2000/svg','line');
+        sl.setAttribute('x1', pos.x); sl.setAttribute('y1', pos.y);
+        sl.setAttribute('x2', sx); sl.setAttribute('y2', sy);
+        sl.setAttribute('stroke', state === 'planned' ? '#4a7a3a' : '#3d2b14');
+        sl.setAttribute('stroke-width','1'); sl.setAttribute('opacity', state==='locked'?'0.3':'0.6');
+        linesG.appendChild(sl);
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+        g.style.cursor = state === 'locked' ? 'default' : 'pointer';
+        const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        c.setAttribute('cx', sx); c.setAttribute('cy', sy); c.setAttribute('r', sat.r);
+        c.setAttribute('fill', col.fill); c.setAttribute('stroke', col.stroke);
+        c.setAttribute('stroke-width', state === 'planned' ? '2.5' : '1.5');
+        if (col.filter) c.setAttribute('filter', col.filter);
+        g.appendChild(c);
+
+        if (state === 'planned') { const s = makeMiniStamp(sx, sy, sat.r); g.appendChild(s); }
+
+        const lt = document.createElementNS('http://www.w3.org/2000/svg','text');
+        lt.setAttribute('x', sx); lt.setAttribute('y', sy + 4);
+        lt.setAttribute('text-anchor','middle');
+        lt.setAttribute('font-family',"'Bebas Neue',sans-serif"); lt.setAttribute('font-size','8');
+        lt.setAttribute('fill', state === 'locked' ? '#5a4a30' : '#1e1710');
+        lt.setAttribute('pointer-events','none');
+        lt.textContent = 'L'+(lv+1);
+        g.appendChild(lt);
+
+        g.addEventListener('mouseenter', () => { if (state!=='locked') c.setAttribute('filter','url(#nh)'); });
+        g.addEventListener('mouseleave', () => { if (col.filter) c.setAttribute('filter', col.filter); else c.removeAttribute('filter'); });
+        g.addEventListener('click', () => { if (state !== 'locked') selectNode(skill, tree, lv); });
+        nodesG.appendChild(g);
+      }
+    }
+
+    const state = getNodeState(skill, tree, 0);
+    const col = nodeColors(state);
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.style.cursor = 'pointer';
+
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', pos.x); c.setAttribute('cy', pos.y); c.setAttribute('r', pos.r);
+    c.setAttribute('fill', col.fill); c.setAttribute('stroke', col.stroke);
+    c.setAttribute('stroke-width', state === 'planned' ? '3' : skill.isBridge ? '2.5' : '1.5');
+    if (col.filter) c.setAttribute('filter', col.filter);
+
+    if (skill.isBridge) {
+      const ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      ring.setAttribute('cx', pos.x); ring.setAttribute('cy', pos.y); ring.setAttribute('r', pos.r + 5);
+      ring.setAttribute('fill','none'); ring.setAttribute('stroke', state === 'planned' ? '#4a7a3a' : '#9b1c1c');
+      ring.setAttribute('stroke-width','1'); ring.setAttribute('stroke-dasharray','4 3'); ring.setAttribute('opacity','0.5');
+      g.appendChild(ring);
+    }
+    g.appendChild(c);
+
+    if (state === 'planned') { const s = makePurchasedStamp(pos.x, pos.y, pos.r); g.appendChild(s); }
+
+    const tl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    tl.setAttribute('x', pos.x); tl.setAttribute('y', pos.y + 4);
+    tl.setAttribute('text-anchor','middle');
+    tl.setAttribute('font-family',"'Bebas Neue',sans-serif");
+    tl.setAttribute('font-size', pos.r > 18 ? '10' : '8');
+    tl.setAttribute('fill', state === 'locked' ? '#5a4a30' : '#1e1710');
+    tl.setAttribute('pointer-events','none');
+    tl.textContent = 'T'+skill.tier;
+    g.appendChild(tl);
+
+    g.addEventListener('mouseenter', () => { if (state!=='planned') c.setAttribute('filter','url(#nh)'); });
+    g.addEventListener('mouseleave', () => { if (col.filter) c.setAttribute('filter', col.filter); else c.removeAttribute('filter'); });
+    g.addEventListener('click', () => selectNode(skill, tree, 0));
+    nodesG.appendChild(g);
+  });
+}
+
+function makePurchasedStamp(cx, cy, r) {
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('pointer-events','none');
+  const size = r * 0.55;
+  const l1 = document.createElementNS('http://www.w3.org/2000/svg','line');
+  l1.setAttribute('x1',cx-size); l1.setAttribute('y1',cy-size);
+  l1.setAttribute('x2',cx+size); l1.setAttribute('y2',cy+size);
+  l1.setAttribute('stroke','#4a7a3a'); l1.setAttribute('stroke-width','2.5'); l1.setAttribute('stroke-linecap','round');
+  const l2 = document.createElementNS('http://www.w3.org/2000/svg','line');
+  l2.setAttribute('x1',cx-size); l2.setAttribute('y1',cy+size*0.1);
+  l2.setAttribute('x2',cx+size*0.6); l2.setAttribute('y2',cy-size);
+  l2.setAttribute('stroke','#4a7a3a'); l2.setAttribute('stroke-width','2.5'); l2.setAttribute('stroke-linecap','round');
+  g.appendChild(l1); g.appendChild(l2);
+  return g;
+}
+
+function makeMiniStamp(cx, cy, r) {
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('pointer-events','none');
+  const size = r * 0.45;
+  const l1 = document.createElementNS('http://www.w3.org/2000/svg','line');
+  l1.setAttribute('x1',cx-size); l1.setAttribute('y1',cy-size);
+  l1.setAttribute('x2',cx+size); l1.setAttribute('y2',cy+size);
+  l1.setAttribute('stroke','#4a7a3a'); l1.setAttribute('stroke-width','1.5'); l1.setAttribute('stroke-linecap','round');
+  const l2 = document.createElementNS('http://www.w3.org/2000/svg','line');
+  l2.setAttribute('x1',cx-size); l2.setAttribute('y1',cy+size*0.1);
+  l2.setAttribute('x2',cx+size*0.6); l2.setAttribute('y2',cy-size);
+  l2.setAttribute('stroke','#4a7a3a'); l2.setAttribute('stroke-width','1.5'); l2.setAttribute('stroke-linecap','round');
+  g.appendChild(l1); g.appendChild(l2);
+  return g;
+}
+
+function selectNode(skill, tree, level) {
+  selectedNode = {skill, tree, level};
+  document.getElementById('info-empty').style.display = 'none';
+  const c = document.getElementById('info-content');
+  c.classList.remove('vis'); void c.offsetWidth; c.classList.add('vis');
+
+  const isParent = level === 0;
+  const state = getNodeState(skill, tree, level);
+  const isPlanned = state === 'planned';
+  const isLocked  = state === 'locked';
+
+  document.getElementById('info-badge').textContent =
+    'TIER ' + skill.tier + (skill.isBridge ? ' — BRIDGE' : '') + (isParent ? ' — LVL 1' : ' — LVL '+(level+1));
+
+  const statusEl = document.getElementById('plan-status');
+  if (isPlanned) { statusEl.textContent = '✓ PLANNED'; statusEl.className = 'plan-node-status planned'; }
+  else if (isLocked) { statusEl.textContent = '✗ LOCKED — BUY LVL 1 FIRST'; statusEl.className = 'plan-node-status locked'; }
+  else { statusEl.textContent = 'NOT PLANNED'; statusEl.className = 'plan-node-status available'; }
+
+  document.getElementById('info-name').textContent = skill.name;
+  document.getElementById('info-desc').textContent = skill.desc;
+
+  const perksEl = document.getElementById('info-perks');
+  if (isParent) {
+    perksEl.innerHTML = skill.levels.map((p,i) => `
+      <div class="info-perk">
+        <div class="perk-bullet"></div>
+        <div><span class="info-level-tag">LVL ${i+1} — </span>${p}</div>
+      </div>
+    `).join('');
+  } else {
+    perksEl.innerHTML = `
+      <div class="info-perk">
+        <div class="perk-bullet"></div>
+        <div><span class="info-level-tag">LVL ${level+1} — </span>${skill.levels[level]}</div>
+      </div>
+    `;
+  }
+
+  const costs = SKILL_COSTS[skill.tier];
+  const cost = isParent ? skill.cost : (level === 1 ? costs.l2 : costs.l3);
+  document.getElementById('info-cost').textContent = cost + ' XP';
+
+  const btn = document.getElementById('act-btn');
+  if (isLocked) {
+    btn.textContent = 'BUY LVL 1 FIRST';
+    btn.className = 'act-btn'; btn.disabled = true;
+  } else if (isPlanned) {
+    btn.textContent = '✓ PLANNED — CLICK TO REMOVE';
+    btn.className = 'act-btn purchased'; btn.disabled = false;
+  } else {
+    btn.textContent = 'ADD TO PLAN';
+    btn.className = 'act-btn'; btn.disabled = false;
+  }
+}
+
+function purchaseNode() {
+  if (!selectedNode) return;
+  const {skill, tree, level} = selectedNode;
+  const isParent = level === 0;
+  const state = getNodeState(skill, tree, level);
+  if (state === 'locked') return;
+
+  const total = countTotalPlanned();
+
+  if (state === 'planned') {
+    // Remove from plan
+    if (isParent) {
+      skill.purchased = false;
+      // Also remove any satellite levels
+      if (skill.levelPurchased) skill.levelPurchased = skill.levelPurchased.map(() => false);
+    } else {
+      skill.levelPurchased[level-1] = false;
+      // Remove higher levels too
+      if (level === 1 && skill.levelPurchased[1]) skill.levelPurchased[1] = false;
+    }
+  } else {
+    // Add to plan — check 55 cap
+    if (total >= MAX_SKILLS) {
+      showToast('BUILD FULL — 55 SKILL LIMIT REACHED');
+      return;
+    }
+    if (total >= 50) showToast('WARNING — ' + (MAX_SKILLS - total - 1) + ' SKILLS REMAINING');
+    if (isParent) skill.purchased = true;
+    else skill.levelPurchased[level-1] = true;
+  }
+
+  updatePlannerBar();
+  renderTree(tree);
+  selectNode(skill, tree, level);
+  updateTreeHeader(tree);
+}
+
+// ============================================================
+// HUB
+// ============================================================
+const HUB_POS = {
+  gathering: [
+    {cx:310,cy:155,r:14}, {cx:235,cy:180,r:8},
+    {cx:220,cy:115,r:9},  {cx:170,cy:192,r:6},
+    {cx:155,cy:88,r:6},   {cx:188,cy:222,r:5},
+    {cx:110,cy:178,r:7},
+    {cx:90, cy:130,r:7},  {cx:90, cy:240,r:7},
+  ],
+  crafting: [
+    {cx:690,cy:155,r:14}, {cx:765,cy:180,r:8},
+    {cx:780,cy:115,r:9},  {cx:830,cy:192,r:6},
+    {cx:845,cy:88,r:6},   {cx:812,cy:222,r:5},
+    {cx:890,cy:178,r:7},
+    {cx:910,cy:130,r:7},  {cx:910,cy:240,r:7},
+  ],
+  hunting: [
+    {cx:310,cy:345,r:14}, {cx:235,cy:320,r:8},
+    {cx:220,cy:385,r:9},  {cx:170,cy:308,r:6},
+    {cx:155,cy:412,r:6},  {cx:188,cy:278,r:5},
+    {cx:110,cy:322,r:7},
+    {cx:90, cy:370,r:7},  {cx:90, cy:260,r:7},
+  ],
+  survival: [
+    {cx:690,cy:345,r:14}, {cx:765,cy:320,r:8},
+    {cx:780,cy:385,r:9},  {cx:830,cy:308,r:6},
+    {cx:845,cy:412,r:6},  {cx:812,cy:278,r:5},
+    {cx:890,cy:322,r:7},
+    {cx:910,cy:370,r:7},  {cx:910,cy:260,r:7},
+  ],
+};
+
+function renderHub() {
+  const g = document.getElementById('hub-nodes');
+  g.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+
+  Object.entries(HUB_POS).forEach(([treeKey, positions]) => {
+    const tree = TREES[treeKey];
+    positions.forEach((pos, i) => {
+      const skill = tree.skills[i];
+      if (!skill) return;
+      const planned = skill.purchased;
+      const fill   = planned ? '#e8dfd0' : '#c2b49a';
+      const stroke = planned ? '#4a7a3a' : '#3d2b14';
+      const filter = 'url(#gw)';
+
+      const c = document.createElementNS(ns, 'circle');
+      c.setAttribute('cx', pos.cx); c.setAttribute('cy', pos.cy); c.setAttribute('r', pos.r);
+      c.setAttribute('fill', fill); c.setAttribute('stroke', stroke);
+      c.setAttribute('stroke-width', planned ? '2' : (pos.r >= 12 ? '1.5' : '1'));
+      c.setAttribute('filter', filter);
+      g.appendChild(c);
+
+      if (planned) {
+        // Green checkmark stamp
+        const sz = pos.r * 0.5;
+        const l1 = document.createElementNS(ns, 'line');
+        l1.setAttribute('x1', pos.cx - sz); l1.setAttribute('y1', pos.cy);
+        l1.setAttribute('x2', pos.cx - sz*0.2); l1.setAttribute('y2', pos.cy + sz);
+        l1.setAttribute('stroke','#4a7a3a'); l1.setAttribute('stroke-width','1.5'); l1.setAttribute('stroke-linecap','round'); l1.setAttribute('pointer-events','none');
+        const l2 = document.createElementNS(ns, 'line');
+        l2.setAttribute('x1', pos.cx - sz*0.2); l2.setAttribute('y1', pos.cy + sz);
+        l2.setAttribute('x2', pos.cx + sz); l2.setAttribute('y2', pos.cy - sz);
+        l2.setAttribute('stroke','#4a7a3a'); l2.setAttribute('stroke-width','1.5'); l2.setAttribute('stroke-linecap','round'); l2.setAttribute('pointer-events','none');
+        g.appendChild(l1); g.appendChild(l2);
+      }
+    });
+  });
+}
+
+function goBack() {
+  document.getElementById('tree-screen').classList.remove('active');
+  document.getElementById('hub').classList.add('active');
+  renderHub();
+  updatePlannerBar();
+  clearInfo();
+}
+
+// ============================================================
+// RESET
+// ============================================================
+function resetBuild() {
+  if (!confirm('Reset your entire build plan? This cannot be undone.')) return;
+  Object.values(TREES).forEach(tree => {
+    tree.skills.forEach(skill => {
+      skill.purchased = false;
+      if (skill.levelPurchased) skill.levelPurchased = skill.levelPurchased.map(() => false);
+    });
+  });
+  updatePlannerBar();
+  renderHub();
+  if (currentTreeKey) renderTree(TREES[currentTreeKey]);
+  clearInfo();
+}
+
+// ============================================================
+// SHARE / LOAD
+// ============================================================
+function buildCode() {
+  // Encode build as compact string: each skill gets a bitmask (parent + levels)
+  // Format: "g:1010000000|h:1000000000|c:1100000000|s:1000000000"
+  const parts = Object.entries(TREES).map(([key, tree]) => {
+    const bits = tree.skills.map(skill => {
+      let b = skill.purchased ? '1' : '0';
+      if (skill.levelPurchased) b += skill.levelPurchased.map(l => l ? '1' : '0').join('');
+      return b;
+    }).join('');
+    return key[0] + ':' + bits;
+  });
+  return parts.join('|');
+}
+
+function loadFromCode(code) {
+  try {
+    const parts = code.trim().split('|');
+    const keyMap = {g:'gathering', h:'hunting', c:'crafting', s:'survival'};
+    parts.forEach(part => {
+      const [prefix, bits] = part.split(':');
+      const treeKey = keyMap[prefix];
+      if (!treeKey || !bits) return;
+      const tree = TREES[treeKey];
+      let pos = 0;
+      tree.skills.forEach(skill => {
+        skill.purchased = bits[pos] === '1'; pos++;
+        if (skill.levelPurchased) {
+          skill.levelPurchased = skill.levelPurchased.map(() => {
+            const v = bits[pos] === '1'; pos++; return v;
+          });
+        }
+      });
+    });
+    updatePlannerBar();
+    renderHub();
+    if (currentTreeKey) { renderTree(TREES[currentTreeKey]); updateTreeHeader(TREES[currentTreeKey]); }
+    clearInfo();
+    showToast('BUILD LOADED SUCCESSFULLY');
+  } catch(e) {
+    showToast('INVALID BUILD CODE');
+  }
+}
+
+function openShare() {
+  document.getElementById('share-code').value = buildCode();
+  document.getElementById('share-modal').classList.add('open');
+}
+
+function closeShare() {
+  document.getElementById('share-modal').classList.remove('open');
+}
+
+function copyCode() {
+  const el = document.getElementById('share-code');
+  el.select();
+  document.execCommand('copy');
+  showToast('BUILD CODE COPIED');
+}
+
+function loadCode() {
+  const code = document.getElementById('share-code').value;
+  closeShare();
+  loadFromCode(code);
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('warn-toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function clearInfo() {
+  document.getElementById('info-empty').style.display = 'flex';
+  document.getElementById('info-content').classList.remove('vis');
+  selectedNode = null;
+}
+
+// Load build from URL hash if present
+window.addEventListener('load', () => {
+  if (window.location.hash) {
+    try {
+      const code = decodeURIComponent(window.location.hash.slice(1));
+      loadFromCode(code);
+    } catch(e) {}
+  }
+  renderHub();
+  updatePlannerBar();
+});
+</script>
+
+</body>
+</html>
