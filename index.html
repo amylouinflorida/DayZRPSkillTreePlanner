@@ -551,14 +551,14 @@ const TREES = {
         desc:"You process fish with greater efficiency.",
         levels:["15% chance to obtain an additional filet when processing fish.","25% chance to obtain an additional filet when processing fish.","40% chance to obtain an additional filet when processing fish."],
         isBridge:false, cost:300, purchased:false, levelPurchased:[false,false] },
-      { id:'h6', tier:3, name:"Fat Harvest",
-        desc:"You extract more usable fat from animals.",
-        levels:["10% chance to obtain additional fat while skinning.","20% chance to obtain additional fat while skinning.","30% chance to obtain additional fat while skinning."],
-        isBridge:false, cost:300, purchased:false, levelPurchased:[false,false] },
-      { id:'h7', tier:3, name:"Master Tracker",
+      { id:'h6', tier:3, name:"Master Tracker",
         desc:"You are able to track animals using the animal tracking system.",
         levels:["Can track animals within 100m.","Can track animals within 200m.","Can track animals within 300m."],
         isBridge:true, cost:300, purchased:false, levelPurchased:[false,false] },
+      { id:'h7', tier:3, name:"Fat Harvest",
+        desc:"You extract more usable fat from animals.",
+        levels:["10% chance to obtain additional fat while skinning.","20% chance to obtain additional fat while skinning.","30% chance to obtain additional fat while skinning."],
+        isBridge:false, cost:300, purchased:false, levelPurchased:[false,false] },
       { id:'h8', tier:4, name:"Master Angler",
         desc:"You fish with expert efficiency.",
         levels:["30% chance to not consume bait when fishing. 30% chance to not lose hook durability. 25% increased chance to catch fish."],
@@ -947,7 +947,7 @@ function renderTree(tree) {
     const sa = tree.skills[a], sb = tree.skills[b];
     let state = 'locked';
     if (sa.purchased && sb.purchased) state = 'planned';
-    else if (sa.purchased) state = 'available';
+    else if (sa.purchased || sb.purchased) state = 'available';
 
     const line = document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1', pa.x); line.setAttribute('y1', pa.y);
